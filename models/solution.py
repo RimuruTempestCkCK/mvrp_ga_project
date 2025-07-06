@@ -5,30 +5,31 @@ class Solution:
         self.fitness = None
 
     def evaluate(self, ports, ship, distance_matrix, time_windows, service_time, speed):
-        from ga.genetic_algorithm import hitung_fitness
-        self.fitness = hitung_fitness(self, ports, distance_matrix, ship, time_windows, service_time, speed)
-        id_to_index = {port.id: idx for idx, port in enumerate(ports.values())}
+        id_to_index = {port.id: i for i, port in ports.items()}
         total_cost = 0
-        for i in range(1, len(self.route)):
-            from_port = self.route[i - 1]
-            to_port = self.route[i]
 
-            # Gunakan mapping ID ke index
+        for i in range(len(self.route) - 1):
+            from_port = self.route[i]
+            to_port = self.route[i+1]
             idx_from = id_to_index[from_port]
             idx_to = id_to_index[to_port]
 
-            # Debug bantu jika masih error
-            print(f"from_port: {from_port}, to_port: {to_port}, idx_from: {idx_from}, idx_to: {idx_to}")
-            print(f"Matrix size: {len(distance_matrix)}x{len(distance_matrix[0])}")
+            jarak = distance_matrix[idx_from][idx_to]
+            biaya_per_mil = 50000
+            biaya = jarak * biaya_per_mil
+            total_cost += biaya
 
-            distance = distance_matrix[idx_from][idx_to]
-            total_cost += distance * 100  # biaya per mil laut
-            total_cost += ports[idx_to].biaya_sandar
+            if to_port != 0:  # Bukan depot
+                total_cost += ports[to_port].biaya_sandar
+
         self.fitness = total_cost
-        return self.fitness
 
 
+    def get_deliveries(self):
+        return {
+            pid: vol for pid, vol in zip(self.route, self.muatan)
+            if pid != 0  # Asumsikan 0 adalah ID depot
+        }
 
     def __repr__(self):
         return f"Solution(Route: {self.route}, Fitness: {self.fitness})"
-

@@ -1,19 +1,27 @@
 import random
 from models.solution import Solution
+from utils import generate_distance_matrix
+
 
 # Membuat populasi awal untuk algoritma genetika
 # Setiap individu merupakan rute pengiriman dari depot ke semua pelabuhan dan kembali ke depot
-def create_initial_population(ports, size):
+def create_initial_population(ports, size, ship):
     population = []
-    # Ambil semua ID pelabuhan kecuali depot (diasumsikan ID=0)
     port_ids = [port.id for port in ports.values() if port.id != 0]
     for _ in range(size):
-        # Susun rute dengan urutan acak (random) dan awali serta akhiri dengan depot
         route = [0] + random.sample(port_ids, len(port_ids)) + [0]
-        # Ambil muatan sesuai demand dari setiap pelabuhan dalam rute
-        muatan = [ports[i].demand_kl for i in route]
+        muatan = [0]  # Mulai dari depot
+
+        for pid in route[1:-1]:  # Untuk setiap pelabuhan (kecuali depot awal dan akhir)
+            port = ports[pid]
+            # Ambil minimum antara demand pelabuhan dan kapasitas kapal
+            demand = min(port.demand_kl, ship.kapasitas_kl)
+            muatan.append(demand)
+
+        muatan.append(0)  # Kembali ke depot
         population.append(Solution(route, muatan))
     return population
+
 
 # Mengevaluasi setiap individu dalam populasi berdasarkan fitness
 def evaluate_population(population, ports, ship, distance_matrix, time_windows, service_time, speed):
@@ -50,16 +58,22 @@ def crossover(parent1, parent2):
 
 # Mutasi rute dengan cara menukar posisi dua pelabuhan secara acak
 def mutate(solution, mutation_rate=0.1):
-    route = solution.route[1:-1]  # Ambil bagian tengah (tanpa depot)
+    route = solution.route[1:-1]  # Bagian tengah (tanpa depot)
+
+    if len(route) < 2:
+        return  # Tidak bisa mutasi kalau hanya 1 atau 0 pelabuhan
+
     if random.random() < mutation_rate:
         i, j = random.sample(range(len(route)), 2)
-        route[i], route[j] = route[j], route[i]  # Tukar dua posisi
-    solution.route = [0] + route + [0]  # Tambahkan depot di awal dan akhir
+        route[i], route[j] = route[j], route[i]
+
+    solution.route = [0] + route + [0]
+
 
 # Fungsi utama untuk menjalankan algoritma genetika
 def run_ga(ports, ship, distance_matrix, time_windows, service_time, speed, pop_size=10, generations=50):
     # 1. Inisialisasi populasi
-    population = create_initial_population(ports, pop_size)
+    population = create_initial_population(ports, pop_size, ship)
     evaluate_population(population, ports, ship, distance_matrix, time_windows, service_time, speed)
 
     for gen in range(generations):
@@ -110,3 +124,41 @@ def hitung_fitness(solution, ports, distance_matrix, ship, time_windows, service
 
     total_biaya += penalty_waktu  # Tambah penalti ke biaya total
     return total_biaya
+
+def optimize(pelabuhan_list, kapal, distance_matrix, inventory_mgr=None, hari=1):
+    if not pelabuhan_list:
+        return None
+
+    # Hitung alokasi muatan berdasar stok & kapasitas
+    alokasi = alokasikan_muatan(pelabuhan_list, kapal.kapasitas_kl, inventory_mgr, hari)
+
+    if not alokasi:
+        return None
+
+    rute = [0] + list(alokasi.keys()) + [0]
+    muatan = [0] + [alokasi[pid] for pid in alokasi] + [0]
+
+    sol = Solution(route=rute, muatan=muatan)
+    sol.fitness = 0  # Akan dihitung ulang nanti
+    return sol
+
+
+def alokasikan_muatan(pelabuhan_kritis, kapasitas_total, inventory_mgr, hari):
+    kebutuhan_dict = {}
+    total_kebutuhan = 0
+
+    for p in pelabuhan_kritis:
+        stok_sekarang = inventory_mgr.get_stok(p.id, hari)
+        kebutuhan = max(0, p.maks_stok - stok_sekarang)
+        if kebutuhan > 0:
+            kebutuhan_dict[p.id] = kebutuhan
+            total_kebutuhan += kebutuhan
+
+    alokasi = {}
+    for pid, kebutuhan in kebutuhan_dict.items():
+        porsi = kebutuhan / total_kebutuhan if total_kebutuhan else 0
+        muatan = min(kebutuhan, kapasitas_total * porsi)
+        alokasi[pid] = round(muatan, 2)
+
+    return alokasi
+
