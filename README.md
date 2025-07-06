@@ -86,6 +86,67 @@ mvrp_ga_project/
 ├── stok_harian.csv # Output stok BBM seluruh pelabuhan
 ``` </pre>
 
+---
+
+📌 A. Diagram Alir Tingkat Tinggi (Overview Alur Program)
+<pre> ```
++----------------------------+
+|   Mulai Program (main)    |
++-------------+-------------+
+              |
+              v
++----------------------------+
+|  Tampilkan Menu Pilihan    |
+|  1. Simulasi Harian        |
+|  2. Satu Kali Optimasi     |
+|  3. Keluar Program         |
++-------------+-------------+
+              |
+              +-------------------------+
+              |                         |
+              v                         v
++----------------------------+     +--------------------------+
+|  Simulasi Harian (30 Hari) |     | Satu Kali Optimasi (GA)  |
++-------------+--------------+     +--------------+-----------+
+              |                                |
+              v                                v
++----------------------------+         +------------------------+
+|  Inisialisasi Data         |         | Inisialisasi Data GA   |
+|  - Pelabuhan               |         | - Pelabuhan            |
+|  - Jarak (Distance Matrix) |         | - Matrix Jarak         |
+|  - Kapal                   |         | - Kapal                |
+|  - InventoryManager        |         |                        |
++----------------------------+         +------------------------+
+              |                                        |
+              v                                        v
++----------------------------+              +----------------------------+
+|  Loop Hari ke-1 s.d 30     |              |   Jalankan GA Optimasi     |
+|  Untuk Tiap Hari:          |              |   (run_ga → hasil rute)    |
+|  - Hitung stok             |              +----------------------------+
+|  - Seleksi pelabuhan kritis|                          |
+|  - Jalankan GA harian      |                          |
+|  - Update inventory        |                          |
+|  - Simpan hasil jadwal     |                          v
++----------------------------+              +-----------------------------+
+              |                             |   Simpan & Tampilkan        |
+              v                             |   - Rute terbaik            |
++----------------------------+              |   - Plot Rute               |
+| Simpan ke CSV:             |              +-----------------------------+
+| - jadwal_pengiriman.csv    |
+| - stok_harian.csv          |
++----------------------------+
+              |
+              v
++----------------------------+
+|   Plot stok harian tiap    |
+|   pelabuhan (grafik)       |
++----------------------------+
+              |
+              v
+        +------------+
+        |   Selesai   |
+        +------------+
+``` </pre>
 
 ---
 
