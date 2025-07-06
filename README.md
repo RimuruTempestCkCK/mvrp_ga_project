@@ -88,7 +88,7 @@ mvrp_ga_project/
 
 ---
 
-📌 A. Diagram Alir Tingkat Tinggi (Overview Alur Program)
+📌 Diagram Alir Tingkat Tinggi (Overview Alur Program)
 <pre> ```
 +----------------------------+
 |   Mulai Program (main)    |
